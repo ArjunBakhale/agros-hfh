@@ -1,0 +1,95 @@
+{
+  "id": "hfh_dialysis_education_demo",
+  "version": 1,
+  "status": "demo_unapproved",
+  "approval_note": "SYNTHETIC DEMO SCRIPT. Not reviewed or approved by Henry Ford Health, an IRB, or clinical leadership. Fixture and internal test numbers only.",
+  "program_name": "Henry Ford Health kidney care education team (demo)",
+  "language": "en",
+  "opening": "Hello, this is an automated assistant calling on behalf of the Henry Ford Health kidney care education team. This is a demo call and it is not recorded. Is now an okay time to talk for about two minutes?",
+  "closing": {
+    "scheduling_requested": "Thank you. A coordinator will call you during the time you chose to explain the program and answer your questions. Nothing has been signed up yet. Goodbye.",
+    "declined": "No problem at all. Thank you for your time. Goodbye.",
+    "callback_later": "No problem. We may try again another time. Goodbye.",
+    "wrong_number": "Sorry for the trouble. We will update our records. Goodbye.",
+    "opted_out": "Understood. We will not call you again about this program. Goodbye.",
+    "not_eligible": "Thanks for letting me know. This program is for adults who are receiving or preparing for dialysis, so it may not be a fit. Thank you for your time. Goodbye.",
+    "needs_human": "Thank you. That is a great question for a member of our care team, so I will ask a coordinator to follow up with you. I cannot give medical advice on this call. Goodbye.",
+    "language_unsupported": "Thank you. I will ask a coordinator who can help in your language to follow up. Goodbye."
+  },
+  "nodes": {
+    "identity_or_availability_check": {
+      "phase": "identity_or_availability_check",
+      "prompt": "Is now an okay time to talk for about two minutes?",
+      "answers": {
+        "yes": {"next": "q_dialysis"},
+        "no": {"end": "callback_later"},
+        "wrong_number": {"end": "wrong_number"}
+      }
+    },
+    "q_dialysis": {
+      "phase": "screening",
+      "answer_key": "dialysis_status",
+      "eligibility_flag": "on_or_preparing_for_dialysis",
+      "prompt": "Are you currently receiving dialysis, or has your care team talked with you about starting dialysis?",
+      "answers": {
+        "yes": {"next": "q_adult"},
+        "no": {"end": "not_eligible"},
+        "unsure": {"next": "q_adult"}
+      }
+    },
+    "q_adult": {
+      "phase": "screening",
+      "answer_key": "adult",
+      "eligibility_flag": "adult",
+      "prompt": "Are you 18 years of age or older?",
+      "answers": {
+        "yes": {"next": "q_interest"},
+        "no": {"end": "not_eligible"}
+      }
+    },
+    "q_interest": {
+      "phase": "interest_capture",
+      "answer_key": "interest",
+      "prompt": "Henry Ford Health offers free education sessions with a nurse educator about dialysis options, including home dialysis. Would you be interested in learning more?",
+      "answers": {
+        "yes": {"next": "q_handoff"},
+        "unsure": {"next": "q_handoff"},
+        "no": {"end": "declined"}
+      }
+    },
+    "q_handoff": {
+      "phase": "consent_handoff",
+      "answer_key": "coordinator_callback_ok",
+      "prompt": "A coordinator would explain the program and ask for your permission before anything starts. Is it okay for a coordinator to call you back at this number?",
+      "answers": {
+        "yes": {"next": "q_window", "handoff": "coordinator_followup"},
+        "no": {"end": "declined"}
+      }
+    },
+    "q_window": {
+      "phase": "scheduling",
+      "answer_key": "preferred_window",
+      "prompt": "What time of day usually works best for a call: morning, afternoon, or evening?",
+      "answers": {
+        "morning": {"end": "scheduling_requested"},
+        "afternoon": {"end": "scheduling_requested"},
+        "evening": {"end": "scheduling_requested"},
+        "any": {"end": "scheduling_requested"}
+      }
+    }
+  },
+  "start": "identity_or_availability_check",
+  "faq": [
+    {"intent": "who_is_calling", "answer": "I am an automated assistant calling on behalf of the Henry Ford Health kidney care education team."},
+    {"intent": "is_this_recorded", "answer": "This call is not recorded and no transcript is kept."}
+  ],
+  "escalations": {
+    "clinical_question": "needs_human",
+    "distress": "needs_human",
+    "request_human": "needs_human",
+    "eligibility_dispute": "needs_human",
+    "language_other": "language_unsupported",
+    "opt_out": "opted_out"
+  },
+  "max_reprompts": 1
+}
