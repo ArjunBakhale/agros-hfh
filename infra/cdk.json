@@ -1,0 +1,10 @@
+{
+  "app": "python3 app.py",
+  "context": {
+    "liveVoice": false,
+    "classifierMode": "rules",
+    "bedrockModelId": "us.amazon.nova-lite-v1:0",
+    "liveCallAllowlist": "",
+    "agentDesiredCount": 0
+  }
+}
