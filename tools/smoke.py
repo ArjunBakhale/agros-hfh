@@ -1,6 +1,10 @@
 """Hosted smoke test: python tools/smoke.py <base_url> <email> <password>"""
 
-import sys, time, uuid, httpx
+import sys
+import time
+import uuid
+
+import httpx
 
 base, email, pw = sys.argv[1], sys.argv[2], sys.argv[3]
 c = httpx.Client(base_url=base, timeout=20, follow_redirects=False)
@@ -9,7 +13,7 @@ h = {"Authorization": f"Bearer {tok}"}
 d = c.get("/api/voice-enrollment/dashboard", headers=h).json()
 results = {}
 for contact, persona in zip(
-    d["contacts"], ["interested", "clinical_question", "declined", "no_answer"]
+    d["contacts"], ["interested", "clinical_question", "declined", "no_answer"], strict=False
 ):
     r = c.post(
         f"/api/voice-enrollment/contacts/{contact['id']}/calls",

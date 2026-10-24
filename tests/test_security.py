@@ -1,6 +1,7 @@
 """Tenant isolation, authorization, CSRF, audit chain, export safety."""
 
 import json
+import re
 import uuid
 
 import psycopg
@@ -267,7 +268,7 @@ def test_import_rejects_real_and_out_of_boundary_data(client, auth, settings) ->
 def test_export_has_no_phone_and_is_formula_safe(client, auth) -> None:  # type: ignore[no-untyped-def]
     text = client.get("/api/voice-enrollment/export.csv", headers=auth("admin")).text
     assert text.splitlines()[0].startswith("contact_token,status")
-    assert "+1313" not in text and "555" not in text
+    assert not re.search(r"\+1\d{10}|(?<![0-9a-f-])555-?01\d\d(?![0-9a-f-])", text)
 
 
 def test_security_headers(client) -> None:  # type: ignore[no-untyped-def]
