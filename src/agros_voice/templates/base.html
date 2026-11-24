@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{% block title %}Agros voice outreach{% endblock %}</title>
+<style>
+:root{--b:#e5e7eb;--m:#6b7280;--a:#1d4ed8;--w:#b45309;--d:#b91c1c;--g:#047857}
+*{box-sizing:border-box}body{font:14px/1.45 system-ui,-apple-system,Segoe UI,sans-serif;margin:0;color:#111827;background:#f9fafb}
+header{background:#0f172a;color:#fff;padding:10px 20px;display:flex;gap:16px;align-items:center}
+header b{font-size:15px}header .sp{flex:1}header form{margin:0}
+main{max-width:1280px;margin:0 auto;padding:16px 20px}
+.banner{background:#fef3c7;border:1px solid #f59e0b;padding:8px 12px;border-radius:6px;margin-bottom:12px}
+.card{background:#fff;border:1px solid var(--b);border-radius:8px;padding:14px;margin-bottom:14px}
+h2{font-size:15px;margin:0 0 10px}table{width:100%;border-collapse:collapse}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--b);vertical-align:top}th{color:var(--m);font-weight:600;font-size:12px}
+.pill{display:inline-block;padding:1px 8px;border-radius:999px;font-size:12px;background:#eef2ff;color:var(--a)}
+.pill.needs_human,.pill.failed,.pill.timed_out{background:#fee2e2;color:var(--d)}
+.pill.scheduling_requested,.pill.completed{background:#d1fae5;color:var(--g)}
+.pill.declined,.pill.unreachable,.pill.closed{background:#f3f4f6;color:#374151}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
+.stat{border:1px solid var(--b);border-radius:6px;padding:8px}.stat b{font-size:20px;display:block}
+button,select,input{font:inherit;padding:4px 8px;border:1px solid #cbd5e1;border-radius:5px;background:#fff}
+button{cursor:pointer;background:var(--a);color:#fff;border-color:var(--a)}button.sec{background:#fff;color:var(--a)}
+.muted{color:var(--m)}code{font-size:12px}#toast{position:fixed;bottom:16px;right:16px;background:#111827;color:#fff;padding:8px 12px;border-radius:6px;display:none}
+</style></head><body>{% block body %}{% endblock %}<div id="toast"></div></body></html>

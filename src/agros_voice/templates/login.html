@@ -1,0 +1,10 @@
+{% extends "base.html" %}{% block body %}
+<main style="max-width:380px;margin-top:10vh"><div class="card">
+<h2>Agros voice outreach: coordinator sign in</h2>
+{% if error %}<p style="color:#b91c1c">{{ error }}</p>{% endif %}
+<form method="post" action="/login">
+<p><label>Email<br><input name="email" type="email" required style="width:100%" autocomplete="username"></label></p>
+<p><label>Password<br><input name="password" type="password" required style="width:100%" autocomplete="current-password"></label></p>
+<button type="submit">Sign in</button></form>
+<p class="muted">Synthetic sandbox. No real participant data.</p></div></main>
+{% endblock %}

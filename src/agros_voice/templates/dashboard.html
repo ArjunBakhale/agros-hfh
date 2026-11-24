@@ -1,0 +1,67 @@
+{% extends "base.html" %}{% block body %}
+<header><b>Agros voice outreach</b><span>{{ d.tenant.name if d.tenant else '' }}</span><span class="sp"></span>
+<span class="muted" style="color:#cbd5e1">role: {{ actor.role }}</span>
+<form method="post" action="/logout" onsubmit="return csrfForm(this)"><input type="hidden" name="x"><button class="sec">Sign out</button></form></header>
+<main>
+<div class="banner"><b>Demo / fixture mode.</b> Provider: <code>{{ settings.voice_agent_provider }}</code>.
+Live calls approved: <code>{{ settings.voice_live_calls_approved }}</code>. Recording: <code>{{ settings.voice_call_recording_enabled }}</code>.
+Transcript retention: <code>{{ settings.voice_transcript_retention_enabled }}</code>.
+Script content is synthetic and not approved by HFH or an IRB. The agent does not give medical advice, decide eligibility, or take consent.</div>
+
+<div class="card"><h2>Pipeline</h2><div class="grid">
+{% for st in ['pending','queued','calling','scheduling_requested','needs_human','declined','screened','unreachable','closed'] %}
+<div class="stat"><span class="muted">{{ st.replace('_',' ') }}</span><b data-count="{{ st }}">{{ d.counts.get(st, 0) }}</b></div>{% endfor %}
+</div></div>
+
+<div class="card"><h2>Contacts</h2>
+{% if can_call %}<p>Fixture persona for the next call: <select id="persona">{% for p in personas %}<option>{{ p }}</option>{% endfor %}</select>
+<span class="muted">(fixture provider simulates the participant)</span></p>{% endif %}
+<table><thead><tr><th>Token</th><th>Phone</th><th>Campaign flags</th><th>Status</th><th>Last attempt</th><th>Answers</th><th>Actions</th></tr></thead><tbody>
+{% for c in d.contacts %}<tr data-contact="{{ c.contact_token }}">
+<td><code>{{ c.contact_token }}</code>{% if c.is_fixture %} <span class="pill">fixture</span>{% endif %}{% if c.do_not_call %} <span class="pill failed">DNC</span>{% endif %}</td>
+<td>{{ c.phone_masked }}</td><td><code>{{ c.eligibility_flags | tojson }}</code></td>
+<td><span class="pill {{ c.status }}">{{ c.status }}</span><br><span class="muted">attempts {{ c.attempt_count }}</span></td>
+<td>{% if c.last_attempt_id %}<span class="pill {{ c.last_attempt_status }}">{{ c.last_attempt_status }}</span> {{ c.disposition or '' }}<br>
+<span class="muted">{{ c.dialogue_state }}{% if c.fixture_persona %} · {{ c.fixture_persona }}{% endif %}{% if c.failure_reason %} · {{ c.failure_reason }}{% endif %}</span>{% endif %}</td>
+<td><code>{{ (c.answers or {}) | tojson }}</code></td>
+<td>{% if can_call %}<button onclick="callContact('{{ c.id }}')">Start call</button>{% endif %}
+{% if can_write %} <button class="sec" onclick="overrideDisp('{{ c.id }}')">Override</button>{% endif %}</td></tr>{% endfor %}
+</tbody></table></div>
+
+<div class="card"><h2>Open handoffs</h2>{% if not d.handoffs %}<p class="muted">None.</p>{% else %}
+<table><thead><tr><th>Contact</th><th>Kind</th><th>Reason</th><th>Preferred window</th><th>Status</th><th></th></tr></thead><tbody>
+{% for h in d.handoffs %}<tr><td><code>{{ h.contact_token }}</code></td><td>{{ h.kind }}</td><td>{{ h.reason }}</td><td>{{ h.preferred_window or '' }}</td>
+<td><span class="pill">{{ h.status }}</span></td><td>{% if can_call %}<button onclick="handoff('{{ h.id }}','completed')">Mark done</button>{% endif %}</td></tr>{% endfor %}
+</tbody></table>{% endif %}</div>
+
+<div class="card"><h2>Failed / timed-out calls</h2>{% if not d.failed %}<p class="muted">None.</p>{% else %}
+<table><tbody>{% for a in d.failed %}<tr><td><code>{{ a.contact_token }}</code></td><td><span class="pill {{ a.status }}">{{ a.status }}</span></td><td>{{ a.failure_reason }}</td><td class="muted">{{ a.created_at }}</td></tr>{% endfor %}</tbody></table>{% endif %}</div>
+
+{% if can_write %}<div class="card"><h2>Campaigns, import &amp; export</h2>
+{% for c in d.campaigns %}<p><b>{{ c.name }}</b> <span class="pill">{{ c.status }}</span> script <code>{{ c.script_id }}</code> · max attempts {{ c.max_attempts }}
+<button class="sec" onclick="campStatus('{{ c.id }}','{{ 'paused' if c.status=='active' else 'active' }}')">{{ 'Pause' if c.status=='active' else 'Resume' }}</button>
+<input type="file" id="csv-{{ c.id }}" accept=".csv"><button class="sec" onclick="importCsv('{{ c.id }}')">Import CSV</button></p>{% endfor %}
+<p><a href="/api/voice-enrollment/export.csv">Export outcomes CSV</a> (no phone numbers or transcripts) · <a href="#" onclick="verifyAudit();return false">Verify audit chain</a></p></div>{% endif %}
+
+<div class="card"><h2>Recent audit events</h2><table><thead><tr><th>#</th><th>Actor</th><th>Action</th><th>Object</th><th>At</th></tr></thead><tbody>
+{% for e in d.audit %}<tr><td>{{ e.seq }}</td><td>{{ e.actor_type }}</td><td><code>{{ e.action }}</code></td><td>{{ e.object_type }}</td><td class="muted">{{ e.created_at }}</td></tr>{% endfor %}
+</tbody></table></div>
+</main>
+<script>
+function csrf(){const m=document.cookie.match(/(?:^|; )agros_csrf=([^;]+)/);return m?decodeURIComponent(m[1]):''}
+function toast(t){const e=document.getElementById('toast');e.textContent=t;e.style.display='block';setTimeout(()=>e.style.display='none',4000)}
+async function api(path,opts={}){opts.headers=Object.assign({'X-CSRF-Token':csrf()},opts.headers||{});const r=await fetch(path,opts);let b={};try{b=await r.json()}catch(e){}
+ if(!r.ok){toast((b.error||b.detail||r.statusText).toString());throw new Error('failed')}return b}
+function csrfForm(f){fetch(f.action,{method:'POST',headers:{'X-CSRF-Token':csrf()}}).then(()=>location='/login');return false}
+async function callContact(id){const p=document.getElementById('persona');await api(`/api/voice-enrollment/contacts/${id}/calls`,{method:'POST',
+ headers:{'Content-Type':'application/json','Idempotency-Key':'ui-'+crypto.randomUUID()},body:JSON.stringify({persona:p?p.value:null})});toast('Call queued');poll()}
+async function overrideDisp(id){const s=prompt('New status (scheduling_requested, scheduled, declined, unreachable, needs_human, closed)');if(!s)return;
+ const r=prompt('Reason (required)');if(!r)return;await api(`/api/voice-enrollment/contacts/${id}/disposition`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:s,reason:r})});location.reload()}
+async function handoff(id,s){await api(`/api/voice-enrollment/handoffs/${id}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:s})});location.reload()}
+async function campStatus(id,s){await api(`/api/voice-enrollment/campaigns/${id}/status`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:s})});location.reload()}
+async function importCsv(id){const f=document.getElementById('csv-'+id).files[0];if(!f)return toast('Choose a CSV');const fd=new FormData();fd.append('file',f);
+ const b=await api(`/api/voice-enrollment/campaigns/${id}/contacts`,{method:'POST',body:fd});toast(`Imported ${b.inserted}, duplicates ${b.duplicates}, errors ${b.errors.length}`);setTimeout(()=>location.reload(),1500)}
+async function verifyAudit(){const b=await api('/api/voice-enrollment/audit/verify');toast(b.ok?`Audit chain intact (${b.events} events)`:`Audit chain BROKEN at ${b.first_broken}`)}
+function poll(){let n=0;const t=setInterval(()=>{if(++n>10){clearInterval(t)};location.reload()},2500)}
+</script>
+{% endblock %}

@@ -1,0 +1,54 @@
+# Self-hosted fixture stack (no AWS or voice vendors): Postgres + api + worker.
+# Secrets come from the environment or a git-ignored compose.env next to this file:
+#   POSTGRES_PASSWORD, APP_DB_PASSWORD, SEED_PASSWORD, SESSION_SECRET, VOICE_WEBHOOK_SECRET
+# Run: docker compose --env-file compose.env up --build   (dashboard on http://localhost:${AGROS_PORT:-8000})
+x-app-env: &app-env
+  APP_ENV: local
+  DB_HOST: db
+  DB_SSLMODE: disable
+  DB_MASTER_USER: postgres
+  DB_MASTER_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+  APP_DB_PASSWORD: ${APP_DB_PASSWORD:?set APP_DB_PASSWORD}
+  SEED_PASSWORD: ${SEED_PASSWORD:?set SEED_PASSWORD}
+  SESSION_SECRET: ${SESSION_SECRET:?set SESSION_SECRET}
+  VOICE_WEBHOOK_SECRET: ${VOICE_WEBHOOK_SECRET:?set VOICE_WEBHOOK_SECRET}
+  COOKIE_SECURE: ${COOKIE_SECURE:-false}
+  PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8000}
+  WEBHOOK_BASE_URL: http://api:8000
+  VOICE_AGENT_ENABLED: "true"
+  VOICE_AGENT_PROVIDER: fixture
+  CLASSIFIER_MODE: rules
+
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      POSTGRES_DB: agros
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d agros"]
+      interval: 2s
+      retries: 30
+  bootstrap:
+    build: .
+    command: ["bootstrap"]
+    environment: *app-env
+    depends_on: { db: { condition: service_healthy } }
+  api:
+    build: .
+    command: ["api"]
+    environment: *app-env
+    ports: ["${AGROS_PORT:-8000}:8000"]
+    depends_on: { bootstrap: { condition: service_completed_successfully } }
+    restart: unless-stopped
+  worker:
+    build: .
+    command: ["worker"]
+    environment: *app-env
+    healthcheck: { disable: true }
+    depends_on: { bootstrap: { condition: service_completed_successfully } }
+    restart: unless-stopped
+
+volumes:
+  pgdata:
