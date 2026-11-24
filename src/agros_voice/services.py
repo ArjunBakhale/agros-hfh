@@ -327,14 +327,15 @@ def request_call(
 def _fail_attempt(
     conn: Conn, tenant_id: str, attempt: dict[str, Any], status: str, reason: str
 ) -> None:
-    conn.execute(
+    row = conn.execute(
         """update voice_call_attempts set status=%s, dialogue_state='failed', failure_reason=%s,
-             disposition=coalesce(disposition, %s), ended_at=now() where id=%s""",
+             disposition=coalesce(disposition, %s), ended_at=now() where id=%s returning disposition""",
         (status, reason, "unreachable" if status == "failed" else "needs_human", attempt["id"]),
-    )
+    ).fetchone()
     contact_status = "unreachable" if status == "failed" else "needs_human"
     conn.execute(
-        "update voice_contacts set status=%s where id=%s", (contact_status, attempt["contact_id"])
+        "update voice_contacts set status=%s, final_disposition=%s where id=%s",
+        (contact_status, row["disposition"] if row else None, attempt["contact_id"]),
     )
     if contact_status == "needs_human":
         _open_handoff(conn, tenant_id, attempt, "human_review", f"call {status}: {reason}", None)

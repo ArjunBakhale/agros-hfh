@@ -7,3 +7,4 @@
 infra/cdk.out
 infra/.venv
 .env
+compose.env

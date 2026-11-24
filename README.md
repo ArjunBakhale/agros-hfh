@@ -66,11 +66,12 @@ A second tenant (`other+admin@...`) is seeded to check tenant isolation.
 
 `compose.yaml` runs Postgres, the api and the worker with no AWS or voice-vendor
 credentials. Put `POSTGRES_PASSWORD`, `APP_DB_PASSWORD`, `SEED_PASSWORD`,
-`SESSION_SECRET` and `VOICE_WEBHOOK_SECRET` in a git-ignored `.env` (plus
-`COOKIE_SECURE=true` behind HTTPS and `AGROS_PORT` to change the host port), then:
+`SESSION_SECRET` and `VOICE_WEBHOOK_SECRET` in a git-ignored `compose.env` (plus
+`COOKIE_SECURE=true` behind HTTPS and `AGROS_PORT` to change the host port). It is not
+named `.env` because the app and tests also read `.env`. Then:
 
 ```sh
-docker compose up --build -d          # bootstrap runs migrate + seed, then api and worker start
+docker compose --env-file compose.env up --build -d          # bootstrap runs migrate + seed, then api and worker start
 python tools/smoke.py http://localhost:8000 admin@agros-demo.test "$SEED_PASSWORD"
 ```
 

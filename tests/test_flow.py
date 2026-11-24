@@ -56,6 +56,7 @@ def test_persona_end_to_end(
     d = client.get("/api/voice-enrollment/dashboard", headers=h).json()
     c = next(c for c in d["contacts"] if c["id"] == cid)
     assert c["status"] == contact_status
+    assert c["final_disposition"] == disposition
     assert "phone_e164" not in c and c["phone_masked"].startswith("***")
     hs = [x for x in d["handoffs"] if x["contact_id"] == cid]
     assert [x["kind"] for x in hs] == ([handoff] if handoff else [])
